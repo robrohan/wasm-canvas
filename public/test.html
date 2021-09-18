@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+      }
+      .wrapper {
+        display: flex;
+        align-items: center;
+        height: 100vh;
+        justify-content: center;
+      }
+      canvas {
+        aspect-ratio: 16/9;
+        width: 75%;
+      }
+    </style>
+
+    <script type="module">
+      const SIZE_OF_INT = 4;
+      const width = 960;
+      const height = 540;
+      const canvas = document.getElementById("screenCanvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx.imageSmoothingEnabled = false;
+
+      async function bootstrap() {
+        const { instance } = await WebAssembly.instantiateStreaming(
+          fetch("./draw.wasm"),
+          {
+            import: {
+              jlog: function (i) {
+                console.log(`log: ${i}`);
+              },
+            },
+          }
+        );
+
+        // Get local versions of our C exports
+        // note "memory" - gets a reference to all of the C memory
+        const { init, memory, BUFFER, draw } = instance.exports;
+
+        // have C call malloc to reserve some memory for our screen buffer
+        // the data will be stored in the BUFFER variable pointed to in C
+        init(width, height);
+
+        // This is the memory location of where the BUFFER variable starts
+        // in the shared memory
+        const offset = BUFFER.value;
+
+        // Make a javascript array the memory we are using in the BUFFER
+        // variable.
+        const screen = new Uint8ClampedArray(
+          memory.buffer, // using the C memory...
+          offset, // at the offset of the BUFFER variable...
+          SIZE_OF_INT * width * height // grab enough bytes for the height and width
+        );
+
+        // Call C to fill our screen buffer. Note we are passing in
+        // screen which is a pointer on our side to the BUFFER data
+        // on the C side
+        draw(width, height, Date.now(), offset);
+
+        /////////////////////////////////////////////////////////
+        // Mess with the shared memory on the JS side
+        /////////////////////////////////////////////////////////
+        // // const view = new DataView(memory.buffer); // <--- all of the memory
+        // const view = new DataView(memory.buffer, offset); // <--- Just our buffer
+        // // console.log(view.getUint8(0));
+        // for (let x = 0; x < 300; x++) {
+        //   // set the first 300px to black
+        //   view.setUint8(x, 0x0);
+        //   // set the last 300px to black
+        //   view.setUint8(SIZE_OF_INT * width * height - x, 0x0);
+        // }
+        /////////////////////////////////////////////////////////
+
+        // Create an image from our screen data
+        const image = new ImageData(screen, width);
+
+        // and render it using the canvas tag
+        ctx.putImageData(image, 0, 0);
+
+        ///////////////////////////////////////////
+        let start = Date.now();
+        const loop = (t) => {
+          const current = Date.now();
+          const delta = current - start;
+
+          draw(width, height, delta * 0.05, offset);
+          const image = new ImageData(screen, width);
+          ctx.putImageData(image, 0, 0);
+
+          requestAnimationFrame(loop);
+        };
+        requestAnimationFrame(loop);
+      }
+
+      bootstrap();
+    </script>
+  </head>
+  <body>
+    <div class="wrapper">
+      <canvas id="screenCanvas"></canvas>
+    </div>
+  </body>
+</html>
