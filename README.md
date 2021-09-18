@@ -4,7 +4,7 @@ This is a little project that shows an example of how to write some C code, comp
 
 - How to compile into wasm from C
 - How to export specific functions from C into Javascript
-- How to mess with shard memory in Javascript
+- How to mess with shared memory in Javascript
 - An example of using `malloc` without the standard library
 - Passing a buffer from Javascript to C
 - Writing to a buffer in C and reading it in Javascript

@@ -10,7 +10,7 @@ build:
 
 # If you want to export all the functions without having to mark
 # things as EXPORT
-# -Wl,--export-alle
+# -Wl,--export-all
 
 	$(CC) \
 		--target=wasm32 \
