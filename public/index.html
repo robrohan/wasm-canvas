@@ -30,14 +30,7 @@
 
       async function bootstrap() {
         const { instance } = await WebAssembly.instantiateStreaming(
-          fetch("./draw.wasm"),
-          {
-            import: {
-              jlog: function (i) {
-                console.log(`log: ${i}`);
-              },
-            },
-          }
+          fetch("./draw.wasm")
         );
 
         // Get local versions of our C exports
