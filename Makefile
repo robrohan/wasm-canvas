@@ -30,3 +30,6 @@ start: clean build
 # You probably wont have this: https://github.com/robrohan/busboy
 # But anything like it will do. e.g. python3 -m http.server
 	busboy --root=public
+
+serve: clean build
+	cd public; python3 -m http.server
